@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -14,11 +14,11 @@ const formSchema = z.object({
   sport: z.string().min(1, "Sport is required"),
   event: z.string().min(1, "Event is required"),
   betType: z.string().min(1, "Bet type is required"),
-  stake: z.string().transform((val) => Number(val)),
-  odds: z.string().transform((val) => Number(val)),
+  stake: z.number().min(1, "Stake is required"),
+  odds: z.number().min(1, "Odds are required"),
 });
 
-export function NewBetForm({ onSubmit }: { onSubmit: (bet: Bet) => void }) {
+export function NewBetForm({ onSubmit, bets = [] }: { onSubmit: (bet: Bet) => void; bets?: Bet[] }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -26,18 +26,31 @@ export function NewBetForm({ onSubmit }: { onSubmit: (bet: Bet) => void }) {
       sport: "",
       event: "",
       betType: "",
-      stake: "",
-      odds: "",
+      stake: 0,
+      odds: 0,
     },
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    onSubmit({
+    const newBet = {
       id: "",
       ...values,
       settled: false,
-    } as Bet);
+    } as Bet;
+
+    onSubmit(newBet);
+    localStorage.setItem("bets", JSON.stringify([...bets, newBet]));
     form.reset();
+  };
+
+  const handleStakeChange = (e: React.ChangeEvent<HTMLInputElement>, field: any) => {
+    const value = e.target.value === "" ? "0" : e.target.value;
+    field.onChange(Number(value));
+  };
+
+  const handleOddsChange = (e: React.ChangeEvent<HTMLInputElement>, field: any) => {
+    const value = e.target.value === "" ? "0" : e.target.value;
+    field.onChange(Number(value));
   };
 
   return (
@@ -74,7 +87,7 @@ export function NewBetForm({ onSubmit }: { onSubmit: (bet: Bet) => void }) {
                   <SelectItem value="basketball">Basketball</SelectItem>
                   <SelectItem value="baseball">Baseball</SelectItem>
                   <SelectItem value="hockey">Hockey</SelectItem>
-                  <SelectItem value="soccer">Soccer</SelectItem>
+                  <SelectItem value="soccer">American Football</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -126,9 +139,15 @@ export function NewBetForm({ onSubmit }: { onSubmit: (bet: Bet) => void }) {
           name="stake"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Stake ($)</FormLabel>
+              <FormLabel>Stake</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" min="0" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={field.value}
+                  onChange={(e) => handleStakeChange(e, field)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -142,14 +161,22 @@ export function NewBetForm({ onSubmit }: { onSubmit: (bet: Bet) => void }) {
             <FormItem>
               <FormLabel>Odds</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" min="1" {...field} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="1"
+                  value={field.value}
+                  onChange={(e) => handleOddsChange(e, field)}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit" className="w-full">Add Bet</Button>
+        <Button type="submit" className="w-full">
+          Add Bet
+        </Button>
       </form>
     </Form>
   );

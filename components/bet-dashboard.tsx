@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BetList } from "@/components/bet-list";
@@ -8,26 +8,22 @@ import { BetStats } from "@/components/bet-stats";
 import { NewBetForm } from "@/components/new-bet-form";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Bet } from "@/lib/types";
 
 export function BetDashboard() {
   const [bets, setBets] = useState<Bet[]>([]);
-  const { toast } = useToast();
+
+  useEffect(() => {
+    const storedBets = localStorage.getItem("bets");
+    if (storedBets) {
+      setBets(JSON.parse(storedBets));
+    }
+  }, []);
 
   const addBet = (bet: Bet) => {
     setBets([...bets, { ...bet, id: Date.now().toString() }]);
-    toast({
-      title: "Bet added successfully",
-      description: "Your bet has been added to your tracker.",
-    });
   };
 
   return (
@@ -45,7 +41,7 @@ export function BetDashboard() {
             <DialogHeader>
               <DialogTitle>Add New Bet</DialogTitle>
             </DialogHeader>
-            <NewBetForm onSubmit={addBet} />
+            <NewBetForm onSubmit={addBet} bets={bets} />
           </DialogContent>
         </Dialog>
       </div>
@@ -64,11 +60,7 @@ export function BetDashboard() {
             <BetList
               bets={bets.filter((bet) => !bet.settled)}
               onUpdate={(updatedBet) => {
-                setBets(
-                  bets.map((bet) =>
-                    bet.id === updatedBet.id ? updatedBet : bet
-                  )
-                );
+                setBets(bets.map((bet) => (bet.id === updatedBet.id ? updatedBet : bet)));
               }}
             />
           </TabsContent>
@@ -76,11 +68,7 @@ export function BetDashboard() {
             <BetList
               bets={bets.filter((bet) => bet.settled)}
               onUpdate={(updatedBet) => {
-                setBets(
-                  bets.map((bet) =>
-                    bet.id === updatedBet.id ? updatedBet : bet
-                  )
-                );
+                setBets(bets.map((bet) => (bet.id === updatedBet.id ? updatedBet : bet)));
               }}
             />
           </TabsContent>
